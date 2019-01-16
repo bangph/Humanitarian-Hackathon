@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Hackathon - Building program to simunlate food insecurity
+    </title>
+    <link rel="stylesheet" href="ol.css" type="text/css">
+    <link rel="stylesheet" href="jquery-ui.css">
+    <link rel="stylesheet" href="bootstrap.min.css">
+    
+
+    <!-- The line below is only needed for old environments like Internet Explorer and Android 4.x -->
+    <script src="jquery.min.js">
+    </script>
+    <script src="ol-debug.js">
+    </script>
+    <script src="jquery-ui.js"></script>
+    <script src="bootstrap.min.js"></script>    
+    <style>
+      .ui-slider .ui-slider-handle {
+        background-color: red;
+      }
+    </style>
+  </head>
+  <body>
+
+    <div class="row">
+          <div class="col-sm-4">
+            <div style="margin-left: 2%; font-size: 16px;">
+              <div>
+                <img src="https://seeklogo.com/images/W/wfp-world-food-programme-logo-1B0E8EB60E-seeklogo.com.png" style="width: 150px; margin-top: 2%;"/> &nbsp; &nbsp;
+                <img src="https://dbdb.io/media/logos/rasdaman.png" style="width: 250px; height: 150px; margin-top: 2%;"> <br/><br/>
+              </div>
+
+              <br/><br/>
+
+              <b>Future Scenarios</b> <br/>
+
+              <b>Temperature increases: &nbsp; </b> <br/>
+                  <input type="radio" name="temperature" value="2.5"> <span style="color: red;">4 degrees</span> &nbsp; &nbsp; 
+                  <input type="radio" name="temperature" value="1" checked> <span style="color: orange;">1.5 degrees</span> &nbsp; &nbsp; 
+                  <input type="radio" name="temperature" value="-1"> <span style="color: purple;">-1.5 degrees</span>
+              <br/><br/>
+
+              <div id="info">&nbsp;</div>
+                <b>year: </b>2050 
+                <span style="margin-left: 75%;">
+                </span>2100
+
+                <br/><br/>
+
+                <div id="slider">
+                </div>
+                <br/>
+            
+                <b>Food Insecurity: </b> High <img src="color_scale.png" style="width: 55%;"/> Low <br/><br/>
+                <button type="button" id="btnShowCropValue">Run simulation
+                </button>
+              </div>
+          </div>
+          <div class="col-sm-8">
+              <div class="container">                
+                <ul class="nav nav-tabs">
+                  <li class="active">
+                    <a data-toggle="tab" href="#menu1">Food Insecurity Simulation</a>
+                  </li>
+                  <li>
+                    <a data-toggle="tab" href="#menu2">Raster Imageries Processing</a>
+                  </li>
+                </ul>                
+              </div>
+
+              <div class="tab-content">
+                <div id="menu1" class="tab-pane fade in active">
+                  <div id="map" class="map" style="height: 93vh;">   
+                      <div id="tooltip" style="background-color: black; color: yellow; padding: 20px;"></div>
+                  </div>
+                </div>
+
+                <div id="menu2" class="tab-pane fade">
+                    <h4>Raster Database Manager (<b>rasdaman</b> - <a href="www.rasdaman.org">rasdaman.org</a>) - Web Coverage Processing (WCPS) demo queries</h4>
+                    <br/>
+
+                    <div class="row">
+                        <div class="col-sm-6">
+                          <h4>Sentinel 2 False Color on <b>2018-06-14</b></h4>
+                          <textarea id="query1" cols="65" rows="10">
+  for c in (hackathon_b08), d in (hackathon_b04), e in (hackathon_b03)
+
+  return encode({red: c[ansi("2018-06-14"), Lat(39.75:39.81), Long(-121.77:-121.72)];
+                green: d[ansi("2018-06-14"), Lat(39.75:39.81), Long(-121.77:-121.72)];
+                blue: e[ansi("2018-06-14"), Lat(39.75:39.81), Long(-121.77:-121.72)] } / 15
+                  , "png")
+                          </textarea>
+                        </div>
+                        <div class="col-sm-6">
+                          <h4>Sentinel 2 False Color on <b>2018-07-14</b></h4>
+                          <textarea id="query2" cols="65" rows="10">
+  for c in (hackathon_b08), d in (hackathon_b04), e in (hackathon_b03)
+
+  return encode({red: c[ansi("2018-07-14"), Lat(39.75:39.81), Long(-121.77:-121.72)];
+                green: d[ansi("2018-07-14"), Lat(39.75:39.81), Long(-121.77:-121.72)];
+                blue: e[ansi("2018-07-14"), Lat(39.75:39.81), Long(-121.77:-121.72)] } / 15
+                  , "png")
+                          </textarea>
+                        </div>
+                    </div>
+
+                    <br/>
+
+                    <div class="row">
+                        <div class="col-sm-6">
+                          <button id="btnRunQueries1" style=" margin-left: auto; margin-right: auto;">Run WCPS Query 1</button>
+                        </div>
+
+                        <div class="col-sm-6">
+                          <button id="btnRunQueries2" style=" margin-left: auto; margin-right: auto;">Run WCPS Query 2</button>
+                        </div>
+                    </div>
+
+                    <br/>
+
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <div id="result1Containter">
+
+                            </div>
+                        </div>
+
+                        <div class="col-sm-6">
+                            <div id="result2Containter">
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+              </div>
+          </div>    
+          
+            
+    </div>
+    
+
+
+    <script>
+      $(function() {
+        $("#slider").slider({
+          value: 0,
+          min: 0,
+          max: 50,
+          step: 5,
+          slide: function(event, ui) {
+                   
+          }
+          ,
+          change: function(event, ui) {
+            $("#info").html("Current year: <b>" + (2050 + ui.value) + "</b>");     
+            changeStyleFill();
+          }
+        }
+                           );
+        var interval = null;
+        $("#btnShowCropValue").on("click", function() {
+          // loop every second ~ 1 year
+          if (interval == null) {
+            $("#slider").slider('value', 0);
+
+            interval = setInterval(function() {
+              var year = $('#slider').slider("value");
+              console.log(year);
+              if (year == 50) {
+                year = 0;
+                clearInterval(interval);
+                interval = null;                
+              } else {
+                $("#slider").slider('value', year + 5);
+              }
+            }, 1000);
+          }
+          else {
+            clearInterval(interval);
+            interval = null;
+          }
+        });
+
+        $("#btnRunQueries1").on("click", function() {
+          var query1 = $('#query1').val();
+          var oReq = new XMLHttpRequest();
+          oReq.open("post", 'http://localhost:8080/rasdaman/ows', true );        
+          oReq.responseType = "blob";
+          oReq.onload = function ( oEvent )
+          {
+              var blob = oReq.response;
+              var imgSrc1 = URL.createObjectURL( blob );                        
+              var img1 = $( '<img/>', {
+                  "src": imgSrc1,
+                  "width": 550,
+                  "height": 380
+              } );
+              $('#result1Containter').html(img1);
+              // window.URL.revokeObjectURL( imgSrc );
+          };
+          oReq.send( "query=" + query1 );
+        });
+
+        $("#btnRunQueries2").on("click", function() {
+          var query2 = $('#query2').val();
+          var oReq = new XMLHttpRequest();
+          oReq.open("post", 'http://localhost:8080/rasdaman/ows', true );        
+          oReq.responseType = "blob";
+          oReq.onload = function ( oEvent )
+          {
+              var blob = oReq.response;
+              var imgSrc2 = URL.createObjectURL( blob );                        
+              var img2 = $( '<img/>', {
+                  "src": imgSrc2,
+                  "width": 550,
+                  "height": 380
+              } );
+              $('#result2Containter').html(img2);
+              // window.URL.revokeObjectURL( imgSrc );
+          };
+          oReq.send( "query=" + query2); 
+        });
+
+      });
+    
+      var style = new ol.style.Style({
+        fill: new ol.style.Fill({
+          color: 'rgba(255, 0, 0, 0.6)'
+        })
+      });
+
+      // loaded from geojson
+      var orgKPIValues = {};
+
+      function getCropColor(cropValue) {
+        var colors = ["#FF0000", "#FF2A00", "#FF5B00", 
+                      "#FF9000", "#FFC600", "#FFFF00", "#C6FF00", "#90FF00", 
+                      
+                      "#5BFF00", "#2AFF00", "#00FF00", "#00FF2A", "#00FF5B",
+                      "#00FF90", "#00FFC6", "#00FFC6", "#00FFFF", "#00C6FF", "#0090FF", "#005BFF", "#002AFF"
+                     ];
+
+        if (cropValue > 95) {
+          return colors[0];
+        }
+        else if (cropValue > 90) {
+          return colors[1];
+        }
+        else if (cropValue > 85) {
+          return colors[2];
+        }
+        else if (cropValue > 80) {
+          return colors[3];
+        }
+        else if (cropValue > 75) {
+          return colors[4];
+        }
+        else if (cropValue > 70) {
+          return colors[5];
+        }
+        else if (cropValue > 65) {
+          return colors[6];
+        }
+        else if (cropValue > 60) {
+          return colors[7];
+        }
+        else if (cropValue > 55) {
+          return colors[8];
+        }
+        else if (cropValue > 50) {
+          return colors[9];
+        }
+        else if (cropValue > 45) {
+          return colors[10];
+        }
+        else if (cropValue > 40) {
+          return colors[11];
+        }
+        else if (cropValue > 35) {
+          return colors[12];
+        }
+        else if (cropValue > 30) {
+          return colors[13];
+        }
+        else if (cropValue > 25) {
+          return colors[14];
+        }
+        else if (cropValue > 20) {
+          return colors[15];
+        }
+        else if (cropValue > 15) {
+          return colors[16];
+        }
+        else if (cropValue > 10) {
+          return colors[17];
+        }
+        else if (cropValue > 5) {
+          return colors[18];
+        }
+        else if (cropValue > 0) {
+          return colors[19];
+        }
+        else {
+          return colors[20];
+        }
+      }
+
+      function getRandomInt(min, max) {
+        min = Math.ceil(min);
+        max = Math.floor(max);
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+      }
+
+      // Parse KPI strings to values to display on tooltip when hovering a country
+      function parsePKICSV(kpiValue) {
+        var values = kpiValue.split(";");
+        var html = `<ul>
+                      <li>Sea level rise: ${values[1]} m.</li>
+                      <li>Drought: ${values[2]} PDS index.</li>
+                      <li>Impacted land: ${values[3]} %.</li>
+                      <li>Main crop variety: ${values[4]} %.</li>
+                      <li>GDP variations: ${values[5]} %.</li>
+                      <li>Market dependency: ${values[6]} %.</li>
+                      <li>Food uncertainty status: ${values[7]} %.</li>
+                    </ul>`;
+        return html;
+      }
+
+
+      var vectorLayer = new ol.layer.Vector({
+        source: new ol.source.Vector({
+          url: 'http://localhost/HACKATHON/countries.geojson',
+          format: new ol.format.GeoJSON()
+        }
+                                    ),
+        style: function(feature, resolution) {
+          // style.getText().setText(resolution < 5000 ? feature.get('name') : '');       
+          var style = new ol.style.Style({
+            stroke: new ol.style.Stroke({
+              color: 'white',              
+            }),
+            fill: new ol.style.Fill({
+              color: 'rgba(30, 0, 0, 1)'
+            })
+
+        });
+        
+          var text = feature.get("name");  
+                    
+          var crop = feature.get("crop");
+          if (crop != null) {             
+
+             var values = crop.split(";");
+             values.forEach(function(element, index, array) {
+              array[index] = parseFloat(element);
+             });   
+
+             orgKPIValues[text] = values;
+
+             console.log(text, values);
+                       
+             var foodUncertainty = orgKPIValues[text][7];
+             var cropColor = getCropColor(foodUncertainty);
+             
+             style = new ol.style.Style({
+                stroke: new ol.style.Stroke({
+                  color: 'white',              
+                }),
+                fill: new ol.style.Fill({
+                  color: cropColor
+                })
+             });
+             
+          }
+                                        
+          return style;        
+        }
+
+      });
+                                           
+      var map = new ol.Map({
+        layers: [
+          new ol.layer.Tile({
+            source: new ol.source.OSM()
+          }
+                           ),
+          vectorLayer
+        ],
+        target: 'map',
+        view: new ol.View({
+          center: ol.proj.fromLonLat([78.9629, 20.5937]),
+          zoom: 3
+        })
+      });
+
+      var highlightStyleCache = {
+      };
+      // var featureOverlay = new ol.layer.Vector({
+      // source: new ol.source.Vector(),
+      // style: function(feature, resolution) {
+      //   // var text = resolution < 5000 ? feature.get('name') : '';
+      //   var text = feature.get('name');
+      //   if (!highlightStyleCache[text]) {
+      //   highlightStyleCache[text] = new ol.style.Style({
+      //     stroke: new ol.style.Stroke({
+      //     color: '#f00',
+      //     width: 1
+      //     }),
+      //     fill: new ol.style.Fill({
+      //     color: 'rgba(255,0,0,0.1)'
+      //     }),
+      //     text: new ol.style.Text({
+      //     font: '30px Calibri,sans-serif',
+      //     text: text,
+      //     fill: new ol.style.Fill({
+      //       color: 'rgb(255,255,255,1)'
+      //     }),
+      //     stroke: new ol.style.Stroke({
+      //       color: '#f00',
+      //       width: 3
+      //     })
+      //     })
+      //   });
+      //   }
+      //   return highlightStyleCache[text];
+      // }
+      // });
+      var highlight;
+      var displayFeatureInfo = function(pixel) {
+        var feature = map.forEachFeatureAtPixel(pixel, function(feature) {
+          return feature;
+        }
+                                               );
+        // var info = document.getElementById('info');
+        // if (feature) {
+        //   info.innerHTML = feature.getId() + ': ' + feature.get('name');
+        // } else {
+        //   info.innerHTML = '&nbsp;';
+        // }
+        // if (feature !== highlight) {
+        //   if (highlight) {
+        //   featureOverlay.getSource().removeFeature(highlight);
+        //   }
+        //   if (feature) {
+        //   featureOverlay.getSource().addFeature(feature);
+        //   }
+        //   highlight = feature;
+        // }
+      };
+
+      // Based on scenarios, increase/decrease values of KPI.
+      function updateKPIValues(countryName, year) {       
+        var values = orgKPIValues[countryName];
+        var xFactor = parseFloat($("input[name='temperature']:checked").val());
+
+        var seaLevelRise = parseFloat([1]) + 0.1 * xFactor * year;
+        var drought = parseFloat(values[2]) + 0.05 * xFactor * year;        
+        var impactedLand = parseFloat(values[3]) + 0.01 * xFactor * year;
+        var mainCropVariety = parseFloat(values[4]) - 0.07 * xFactor * year;
+        var gdpVariations = parseFloat(values[5]) + 0.02 * xFactor * year;
+        var marketDependency = parseFloat(values[6]) + 0.08 * xFactor * year;
+        var foodUncertainty = parseFloat(values[7]) + 0.85 * xFactor * year;
+
+        if (foodUncertainty > 100) {
+          foodUncertainty = 100;
+        }
+
+        var kpi = "0;" + seaLevelRise.toFixed(2) + ";" + drought.toFixed(2) + ";" + impactedLand.toFixed(2) + ";" + mainCropVariety.toFixed(2) + ";" 
+                + gdpVariations.toFixed(2) + ";" + marketDependency.toFixed(2) + ";" + foodUncertainty.toFixed(2);
+        return kpi;
+      }
+
+
+      var changeStyleFill = function() {
+        var features = vectorLayer.getSource().getFeatures();
+        for (var i = 0; i < features.length; i++) {          
+          var feature = features[i];
+
+          if (feature.get("crop") != null) {
+            var year = $("#slider").slider("value");
+            var countryName = feature.get("name");
+            if (orgKPIValues[countryName] != null) {
+              var newKPI = updateKPIValues(countryName, year);
+              feature.set("crop", newKPI);
+              var cropValue = newKPI.split(";")[7];
+              
+              var cropColor = getCropColor(cropValue);
+              var newStyle = new ol.style.Style({
+                stroke: new ol.style.Stroke({
+                  color: 'white',              
+                }),
+                fill: new ol.style.Fill({
+                  color: cropColor
+                })
+              });
+
+              feature.setStyle(newStyle);
+            }
+          }
+        }
+      }
+
+      var tooltip = document.getElementById('tooltip');
+      var overlay = new ol.Overlay({
+        element: tooltip,
+        offset: [10, 0],
+        positioning: 'bottom-left'
+      });
+      map.addOverlay(overlay);
+
+      function displayTooltip(evt) {
+        var pixel = evt.pixel;
+        var feature = map.forEachFeatureAtPixel(pixel, function(feature) {
+          return feature;
+        });
+        
+        // If move mouse out of feature, don't show the tooltip
+        tooltip.style.display = feature ? '' : 'none';
+        if (feature && feature.get('crop') != null) {
+          overlay.setPosition(evt.coordinate);
+          
+          var crop = feature.get("crop");
+          var kpiText = parsePKICSV(crop);
+           
+          tooltip.innerHTML = "<b>" + feature.get('name') + "</b><br/><br/>" + kpiText;
+        }
+      };
+
+      // map.on('pointermove', function(evt) {
+      //     if (evt.dragging) {
+      //       return;
+      //     }
+      //     var pixel = map.getEventPixel(evt.originalEvent);
+      //     displayFeatureInfo(pixel);
+      //   }
+      // );
+
+      map.on('pointermove', displayTooltip);
+
+      map.on('click', function(evt) {
+        displayFeatureInfo(evt.pixel);
+      });
+    </script>
+  </body>
+</html>
